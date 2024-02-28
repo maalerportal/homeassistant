@@ -3387,6 +3387,12 @@
       "config_flow": false,
       "iot_class": "local_polling"
     },
+    "maalerportal": {
+      "name": "M\u00e5lerportal",
+      "integration_type": "hub",
+      "config_flow": true,
+      "iot_class": "cloud_polling"
+    },
     "madeco": {
       "name": "Madeco",
       "integration_type": "virtual",
