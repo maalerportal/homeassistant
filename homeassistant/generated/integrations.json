@@ -3383,6 +3383,12 @@
       "config_flow": false,
       "iot_class": "local_polling"
     },
+    "maalerportal": {
+      "name": "M\u00e5lerportal",
+      "integration_type": "hub",
+      "config_flow": true,
+      "iot_class": "cloud_polling"
+    },
     "mailgun": {
       "name": "Mailgun",
       "integration_type": "hub",

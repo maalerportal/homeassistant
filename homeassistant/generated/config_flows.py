@@ -298,6 +298,7 @@ FLOWS = {
         "lutron",
         "lutron_caseta",
         "lyric",
+        "maalerportal",
         "mailgun",
         "matter",
         "meater",

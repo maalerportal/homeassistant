@@ -1,0 +1,13 @@
+{
+  "domain": "maalerportal",
+  "name": "M\u00e5lerportal",
+  "codeowners": ["@maalerportal"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://www.home-assistant.io/integrations/maalerportal",
+  "homekit": {},
+  "iot_class": "cloud_polling",
+  "requirements": ["mpsmarthome==1.0.2"],
+  "ssdp": [],
+  "zeroconf": []
+}

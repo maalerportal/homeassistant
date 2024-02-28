@@ -1333,6 +1333,9 @@ motioneye-client==0.3.14
 # homeassistant.components.bang_olufsen
 mozart-api==3.2.1.150.6
 
+# homeassistant.components.maalerportal
+mpsmarthome==1.0.2
+
 # homeassistant.components.mullvad
 mullvad-api==1.0.0
 
