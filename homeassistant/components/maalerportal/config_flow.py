@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 import mpsmarthome
-from mpsmarthome import Configuration
+from mpsmarthome import Configuration, MetersResponse
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -81,7 +81,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle selection of meters step."""
         errors: dict[str, str] = {}
         if user_input is not None:
-            meters = self.context["meterdata"]
+            meters: list[MetersResponse] = self.context["meterdata"]
             save_data: dict[str, Any] = {}
             save_data["meters"] = []
             for k in user_input["entity_selection"]:
