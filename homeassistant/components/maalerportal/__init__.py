@@ -28,10 +28,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     api_client.default_headers["X-API-KEY"] = api_key
     hassapi = HomeAssistantApi(api_client)
     hass.data[DOMAIN][entry.entry_id] = hassapi
-
-    # print(entry.data["meters"])
-    # print(entry.data["api_key"])
-
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
