@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 import logging
+import re
 from typing import Optional, cast
 
 from mpsmarthome import (
@@ -63,9 +64,16 @@ class MaalerportalStatisticSensor(SensorEntity):
         """Set up the meter."""
 
         self._meter = meter
-        self._attr_name = f"{self._meter.identifier} {self._meter.address} {self._meter.meter_counter_type}"
+        self._attr_name = f"{self._meter.address}"
         self._attr_unique_id = f"{meter.identifier}-statistics"
         self._api = api
+        if (
+            meter.identifier is None
+            or meter.address is None
+            or meter.address_meter_id is None
+        ):
+            return
+        self.entity_id = f"sensor.{to_snake_case(meter.identifier + meter.address + meter.address_meter_id)}"
 
     async def async_update(self) -> None:
         """Continually update history."""
@@ -103,7 +111,7 @@ class MaalerportalStatisticSensor(SensorEntity):
                 list[MeterReadingResponseData], response.address_meter_readings
             )
             for am in meter_readings:
-                readings = cast(list[MeterReadingData], am.address_meter_id)
+                readings = cast(list[MeterReadingData], am.readings)
                 readings.sort(
                     key=lambda x: x.timestamp
                     if x.timestamp is not None
@@ -127,3 +135,15 @@ class MaalerportalStatisticSensor(SensorEntity):
 
         if len(statistics) > 0:
             async_import_statistics(self.hass, metadata, statistics)
+
+
+def to_snake_case(s: str) -> str:
+    """Convert a string to snake_case."""
+    # Replace special characters with " "
+    s = re.sub("[^a-zA-Z0-9]", " ", s)
+    # Replace capital letters with space + letter to handle camelCase
+    s = re.sub("(.)([A-Z][a-z]+)", r"\1 \2", s)
+    # For the case where there are no spaces between camelCase letters
+    s = re.sub("([a-z0-9])([A-Z])", r"\1 \2", s)
+    # Convert to lower case and replace spaces with underscores
+    return s.lower().replace(" ", "_")
