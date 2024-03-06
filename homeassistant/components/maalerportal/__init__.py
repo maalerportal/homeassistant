@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 import logging
-import re
 
-from mpsmarthome import ApiClient, Configuration, HomeAssistantApi, MetersResponse
+from mpsmarthome import ApiClient, Configuration, HomeAssistantApi
 
-from homeassistant.components.recorder.statistics import get_instance
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -39,29 +37,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
-        recorder = get_instance(hass)
-        meters: list[MetersResponse] = entry.data["meters"]
-        for m in meters:
-            if isinstance(m, dict):
-                m = MetersResponse(**m)
-            if m.identifier is None or m.address is None or m.address_meter_id is None:
-                continue
-            recorder.async_clear_statistics(
-                [
-                    f"sensor.{to_snake_case(m.identifier + m.address + m.address_meter_id)}"
-                ]
-            )
 
     return unload_ok
-
-
-def to_snake_case(s: str) -> str:
-    """Convert a string to snake_case."""
-    # Replace special characters with " "
-    s = re.sub("[^a-zA-Z0-9]", " ", s)
-    # Replace capital letters with space + letter to handle camelCase
-    s = re.sub("(.)([A-Z][a-z]+)", r"\1 \2", s)
-    # For the case where there are no spaces between camelCase letters
-    s = re.sub("([a-z0-9])([A-Z])", r"\1 \2", s)
-    # Convert to lower case and replace spaces with underscores
-    return s.lower().replace(" ", "_")

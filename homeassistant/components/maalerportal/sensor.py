@@ -139,11 +139,8 @@ class MaalerportalStatisticSensor(SensorEntity):
 
 def to_snake_case(s: str) -> str:
     """Convert a string to snake_case."""
-    # Replace special characters with " "
+
     s = re.sub("[^a-zA-Z0-9]", " ", s)
-    # Replace capital letters with space + letter to handle camelCase
     s = re.sub("(.)([A-Z][a-z]+)", r"\1 \2", s)
-    # For the case where there are no spaces between camelCase letters
     s = re.sub("([a-z0-9])([A-Z])", r"\1 \2", s)
-    # Convert to lower case and replace spaces with underscores
     return s.lower().replace(" ", "_")
