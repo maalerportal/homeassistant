@@ -9,8 +9,10 @@ from mpsmarthome import (
     FullRequest,
     HomeAssistantApi,
     MeterReadingData,
+    MeterReadingResponse,
     MeterReadingResponseData,
     MetersResponse,
+    PartialRequest,
 )
 
 from homeassistant.components.recorder import get_instance
@@ -30,6 +32,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfVolume
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import Throttle
 
 from .const import DOMAIN
 
@@ -75,6 +78,7 @@ class MaalerportalStatisticSensor(SensorEntity):
             return
         self.entity_id = f"sensor.{to_snake_case(meter.identifier + meter.address + meter.address_meter_id)}"
 
+    @Throttle(timedelta(minutes=15))
     async def async_update(self) -> None:
         """Continually update history."""
         lastest_statistic = await self._get_last_stat(self.hass)
@@ -86,8 +90,12 @@ class MaalerportalStatisticSensor(SensorEntity):
             )
 
             if current_time_utc - statistic_start_time_utc < timedelta(hours=1):
+                _LOGGER.debug(
+                    "Skipping fetching new readings, latest at %s",
+                    statistic_start_time_utc,
+                )
                 return
-
+        _LOGGER.debug("Attempting to fetch data")
         await self._get_data(lastest_statistic)
 
     async def _get_last_stat(self, hass: HomeAssistant) -> Optional[StatisticsRow]:
@@ -104,25 +112,33 @@ class MaalerportalStatisticSensor(SensorEntity):
     async def _get_data(self, lastest_statistic: Optional[StatisticsRow]) -> None:
         """Get data from API."""
         statistics: list[StatisticData] = []
+        response: MeterReadingResponse = None
         if lastest_statistic is None:
             request = FullRequest(address_meter_id=self._meter.address_meter_id)
             response = await self._api.api_homeassistant_full_post([request])
-            meter_readings = cast(
-                list[MeterReadingResponseData], response.address_meter_readings
+
+        else:
+            request = PartialRequest(
+                address_meter_id=self._meter.address_meter_id,
+                latestMeasurementTime=(lastest_statistic["start"] + 1),
             )
-            for am in meter_readings:
-                readings = cast(list[MeterReadingData], am.readings)
-                readings.sort(
-                    key=lambda x: x.timestamp
-                    if x.timestamp is not None
-                    else datetime(1970, 1, 1)
+            response = await self._api.api_homeassistant_partial_post([request])
+        meter_readings = cast(
+            list[MeterReadingResponseData], response.address_meter_readings
+        )
+        for am in meter_readings:
+            readings = cast(list[MeterReadingData], am.readings)
+            readings.sort(
+                key=lambda x: x.timestamp
+                if x.timestamp is not None
+                else datetime(1970, 1, 1)
+            )
+            for reading in readings:
+                if reading.timestamp is None or reading.value is None:
+                    continue
+                statistics.append(
+                    StatisticData(start=reading.timestamp, sum=float(reading.value))
                 )
-                for reading in readings:
-                    if reading.timestamp is None or reading.value is None:
-                        continue
-                    statistics.append(
-                        StatisticData(start=reading.timestamp, sum=float(reading.value))
-                    )
 
         metadata = StatisticMetaData(
             name=self._attr_name,
@@ -134,7 +150,10 @@ class MaalerportalStatisticSensor(SensorEntity):
         )
 
         if len(statistics) > 0:
+            _LOGGER.debug("Adding %s readings for %s", len(statistics), self.entity_id)
             async_import_statistics(self.hass, metadata, statistics)
+        else:
+            _LOGGER.debug("No new readings found")
 
 
 def to_snake_case(s: str) -> str:
